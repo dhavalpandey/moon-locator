@@ -1,0 +1,1 @@
+i want to create a python script that can work out the position vector from my position (coordinates) on earth, the time in the world, the position of the moon and earth. This app should consider this and any other factors to output a direction vector that I can use locate where the moon is relative to me.
