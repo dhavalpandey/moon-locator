@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Online Compass with Elevation</title>
+    <style>
+      body,
+      html {
+        height: 100%;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: #000;
+        color: #fff;
+        font-family: Arial, sans-serif;
+      }
+      .compass-container {
+        position: relative;
+        width: 300px;
+        height: 300px;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+      }
+      #info {
+        margin-top: 20px;
+        font-size: 1.2em;
+        text-align: center;
+      }
+      #message {
+        margin-top: 10px;
+        font-size: 1.2em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="compass-container">
+      <canvas id="compass" width="300" height="300"></canvas>
+    </div>
+    <div id="info">
+      <div id="current">Current - Azimuth: 0° | Elevation: 0°</div>
+      <div id="target">Target - Azimuth: 217.21° | Elevation: 48.21°</div>
+    </div>
+    <div id="message">
+      Align your device towards the target direction and elevation.
+    </div>
+
+    <script>
+      const canvas = document.getElementById("compass");
+      const ctx = canvas.getContext("2d");
+      const message = document.getElementById("message");
+      const currentDisplay = document.getElementById("current");
+      const targetDisplay = document.getElementById("target");
+
+      const targetAzimuth = 217.21; // Target azimuth in degrees
+      const targetElevation = 48.21; // Target elevation in degrees
+      const tolerance = 5; // Degrees tolerance for alignment
+
+      let pointDegree;
+
+      function startCompass() {
+        if (typeof DeviceOrientationEvent.requestPermission === "function") {
+          DeviceOrientationEvent.requestPermission()
+            .then((response) => {
+              if (response === "granted") {
+                window.addEventListener(
+                  "deviceorientation",
+                  handleOrientation,
+                  true,
+                );
+              } else {
+                alert("Permission to access device orientation was denied.");
+              }
+            })
+            .catch(() => alert("Device orientation not supported"));
+        } else {
+          window.addEventListener("deviceorientation", handleOrientation, true);
+        }
+      }
+
+      function handleOrientation(event) {
+        const compass =
+          event.webkitCompassHeading || Math.abs(event.alpha - 360);
+        const beta = event.beta; // Front-back tilt (elevation)
+
+        if (compass === null || beta === null) return;
+
+        drawCompass(compass, beta);
+        updateInfo(compass, beta);
+        checkAlignment(compass, beta);
+      }
+
+      function drawCompass(currentAzimuth, currentElevation) {
+        const width = canvas.width;
+        const height = canvas.height;
+        const radius = Math.min(width, height) / 2;
+        ctx.clearRect(0, 0, width, height);
+
+        // Draw outer circle
+        ctx.beginPath();
+        ctx.arc(width / 2, height / 2, radius - 10, 0, 2 * Math.PI);
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Draw N, E, S, W
+        ctx.fillStyle = "#fff";
+        ctx.font = "20px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("N", width / 2, height / 2 - radius + 25);
+        ctx.fillText("E", width / 2 + radius - 25, height / 2);
+        ctx.fillText("S", width / 2, height / 2 + radius - 25);
+        ctx.fillText("W", width / 2 - radius + 25, height / 2);
+
+        // Draw target rotation (fixed)
+        ctx.save();
+        ctx.translate(width / 2, height / 2);
+        ctx.rotate((-targetAzimuth * Math.PI) / 180);
+        ctx.beginPath();
+        ctx.moveTo(0, -radius + 20);
+        ctx.lineTo(0, radius - 20);
+        ctx.strokeStyle = "blue";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw target azimuth point (fixed)
+        const targetAngle = targetAzimuth;
+        const targetX =
+          width / 2 + (radius - 40) * Math.sin((targetAngle * Math.PI) / 180);
+        const targetY =
+          height / 2 - (radius - 40) * Math.cos((targetAngle * Math.PI) / 180);
+        ctx.beginPath();
+        ctx.arc(targetX, targetY, 10, 0, 2 * Math.PI);
+        ctx.fillStyle = "blue";
+        ctx.fill();
+        ctx.strokeStyle = "blue";
+        ctx.stroke();
+
+        // Draw target elevation indicator (fixed)
+        // Represent elevation as vertical position offset
+        const elevationOffset = mapElevationToY(targetElevation);
+        ctx.beginPath();
+        ctx.arc(targetX, targetY - elevationOffset, 8, 0, 2 * Math.PI);
+        ctx.fillStyle = "green";
+        ctx.fill();
+        ctx.strokeStyle = "green";
+        ctx.stroke();
+
+        // Draw user rotation
+        ctx.save();
+        ctx.translate(width / 2, height / 2);
+        ctx.rotate((-currentAzimuth * Math.PI) / 180);
+        ctx.beginPath();
+        ctx.moveTo(0, -radius + 20);
+        ctx.lineTo(0, radius - 20);
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw user azimuth point (dynamic)
+        const userAngle = currentAzimuth;
+        const userX =
+          width / 2 + (radius - 40) * Math.sin((userAngle * Math.PI) / 180);
+        const userY =
+          height / 2 - (radius - 40) * Math.cos((userAngle * Math.PI) / 180);
+        ctx.beginPath();
+        ctx.arc(userX, userY, 8, 0, 2 * Math.PI);
+        ctx.fillStyle = "orange";
+        ctx.fill();
+        ctx.strokeStyle = "orange";
+        ctx.stroke();
+
+        // Draw user elevation indicator (dynamic)
+        const userElevationOffset = mapElevationToY(currentElevation);
+        ctx.beginPath();
+        ctx.arc(userX, userY - userElevationOffset, 8, 0, 2 * Math.PI);
+        ctx.fillStyle = "red";
+        ctx.fill();
+        ctx.strokeStyle = "red";
+        ctx.stroke();
+      }
+
+      function mapElevationToY(elevation) {
+        // Map elevation angle to vertical offset on the compass
+        // Assuming maximum elevation of 90 degrees maps to 100 pixels
+        const maxOffset = 100;
+        return (elevation / 90) * maxOffset;
+      }
+
+      function updateInfo(currentAzimuth, currentElevation) {
+        currentAzimuth = currentAzimuth.toFixed(2);
+        currentElevation = currentElevation.toFixed(2);
+        currentDisplay.textContent = `Current - Azimuth: ${currentAzimuth}° | Elevation: ${currentElevation}°`;
+        targetDisplay.textContent = `Target - Azimuth: ${targetAzimuth}° | Elevation: ${targetElevation}°`;
+      }
+
+      function checkAlignment(currentAzimuth, currentElevation) {
+        const azDifference = Math.abs(targetAzimuth - currentAzimuth);
+        const elDifference = Math.abs(targetElevation - currentElevation);
+
+        const azAligned =
+          azDifference < tolerance || azDifference > 360 - tolerance;
+        const elAligned = elDifference < tolerance;
+
+        if (azAligned && elAligned) {
+          message.textContent = "Target aligned!";
+          message.style.color = "lime";
+        } else {
+          message.textContent =
+            "Align your device towards the target direction and elevation.";
+          message.style.color = "white";
+        }
+      }
+
+      startCompass();
+    </script>
+  </body>
+</html>
