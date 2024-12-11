@@ -46,8 +46,6 @@
         border-radius: 5px;
         color: #fff;
         transition: background-color 0.3s ease;
-        margin-top: 20px;
-        z-index: 10;
       }
       #permission-button:hover {
         background-color: #63b3ed;
@@ -62,48 +60,17 @@
         border: 2px solid #fff;
         border-radius: 50%;
       }
-      .my-point,
-      .target-point {
-        position: absolute;
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-      }
       .my-point {
-        background-color: red;
-        transform: translate(-50%, -50%);
-        transition: opacity 0.3s ease, top 0.1s ease, left 0.1s ease;
-      }
-      .target-point {
-        background-color: lime;
-        transform: translate(-50%, -50%);
-      }
-      /* Direction Labels */
-      .direction-label {
         position: absolute;
-        font-size: 16px;
-        font-weight: bold;
-        color: #fff;
-      }
-      .north {
-        top: 10px;
+        top: 10%;
         left: 50%;
-        transform: translateX(-50%);
-      }
-      .east {
-        top: 50%;
-        right: 10px;
-        transform: translateY(-50%);
-      }
-      .south {
-        bottom: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-      }
-      .west {
-        top: 50%;
-        left: 10px;
-        transform: translateY(-50%);
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        background-color: green;
+        border-radius: 50%;
+        opacity: 0;
+        transition: opacity 0.3s ease;
       }
     </style>
   </head>
@@ -111,13 +78,7 @@
     <div class="compass-container">
       <canvas id="compass" width="300" height="300"></canvas>
       <div class="my-point"></div>
-      <div class="target-point"></div>
       <div class="compass-circle"></div>
-      <!-- Direction Labels -->
-      <div class="direction-label north">N</div>
-      <div class="direction-label east">E</div>
-      <div class="direction-label south">S</div>
-      <div class="direction-label west">W</div>
     </div>
     <div id="info">
       <div id="current">Current - Azimuth: 0° | Elevation: 0°</div>
@@ -137,7 +98,6 @@
       const permissionButton = document.getElementById("permission-button");
       const compassCircle = document.querySelector(".compass-circle");
       const myPoint = document.querySelector(".my-point");
-      const targetPoint = document.querySelector(".target-point");
       const startBtn = document.querySelector(".start-btn");
 
       const targetAzimuth = 217.21; // Target azimuth in degrees
@@ -243,21 +203,21 @@
         } else {
           compass = Math.abs(e.alpha - 360);
         }
-
-        // Update Compass Rotation
         compassCircle.style.transform = `translate(-50%, -50%) rotate(${-compass}deg)`;
-
-        // Update Current Azimuth and Elevation Display
         currentDisplay.textContent = `Current - Azimuth: ${compass.toFixed(
           2,
         )}° | Elevation: ${e.beta.toFixed(2)}°`;
 
-        // Update User's Current Point Position
-        const userPosition = calculatePosition(compass, e.beta);
-        myPoint.style.left = `${userPosition.x}%`;
-        myPoint.style.top = `${userPosition.y}%`;
+        // ±15 degree
+        if (
+          pointDegree < Math.abs(compass) + 15 &&
+          pointDegree > Math.abs(compass) - 15
+        ) {
+          myPoint.style.opacity = 0;
+        } else if (pointDegree) {
+          myPoint.style.opacity = 1;
+        }
 
-        // Check Alignment
         checkAlignment(compass, e.beta);
       }
 
@@ -270,14 +230,6 @@
         if (pointDegree < 0) {
           pointDegree = pointDegree + 360;
         }
-
-        // Plot Target Point Position
-        const targetPosition = calculatePosition(
-          targetAzimuth,
-          targetElevation,
-        );
-        targetPoint.style.left = `${targetPosition.x}%`;
-        targetPoint.style.top = `${targetPosition.y}%`;
       }
 
       function calcDegreeToPoint(latitude, longitude) {
@@ -323,21 +275,6 @@
         }
       }
 
-      // Calculate Position Percentage Based on Azimuth and Elevation
-      function calculatePosition(azimuth, elevation) {
-        // Convert azimuth to radians
-        const azRad = (azimuth * Math.PI) / 180;
-
-        // Normalize elevation to [0, 90] for percentage calculation
-        const elNormalized = Math.min(Math.max(elevation, 0), 90);
-
-        // Calculate x and y positions based on azimuth and elevation
-        const x = 50 + Math.sin(azRad) * 40; // 40% radius for horizontal
-        const y = 50 - Math.cos(azRad) * 40 - elNormalized / 2; // Adjust for elevation
-
-        return { x, y };
-      }
-
       // Check Alignment
       function checkAlignment(currentAzimuth, currentElevation) {
         const azDifference = Math.abs(targetAzimuth - currentAzimuth);
@@ -361,7 +298,6 @@
         }
       }
 
-      // Initialize Geolocation Watch
       function init() {
         permissionButton.addEventListener("click", startCompass);
         navigator.geolocation.getCurrentPosition(locationHandler);
@@ -371,9 +307,6 @@
         }
       }
 
-      // Ensure the permission button never disappears
-      // Removed any code that hides the button after activation
-
       function startCompass() {
         if (isIOS) {
           DeviceOrientationEvent.requestPermission()
@@ -381,17 +314,14 @@
               if (response === "granted") {
                 window.addEventListener("deviceorientation", handler, true);
               } else {
-                alert("Permission to access device orientation was denied.");
+                alert("has to be allowed!");
               }
             })
-            .catch(() =>
-              alert("Device orientation permission request failed."),
-            );
+            .catch(() => alert("not supported"));
         }
       }
 
       init();
-      initGeolocation();
     </script>
   </body>
 </html>
