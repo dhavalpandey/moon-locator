@@ -1,35 +1,52 @@
-
+from flask import Flask, request, jsonify
 from skyfield.api import Topos, load
 from datetime import datetime
+import zoneinfo
 import pytz
 
+all_times = zoneinfo.available_timezones()
+
+app = Flask(__name__)
 eph = load('de421.bsp')  
 
-latitude = 51.4228224
-longitude = -0.1998848  
-elevation = 19     
+@app.route('/get-moon-location', methods=['POST'])
+def get_moon_location():
+    try:
+        latitude = float(request.headers.get('latitude'))
+        longitude = float(request.headers.get('longitude')) 
+        elevation = float(request.headers.get('elevation'))  
+        dt_str = str(request.headers.get('time'))
+        local_time = datetime.fromisoformat(dt_str)
 
-location = Topos(latitude_degrees=latitude, longitude_degrees=longitude, elevation_m=elevation)
+        location = Topos(latitude_degrees=latitude, longitude_degrees=longitude, elevation_m=elevation)
+        ts = load.timescale()
+        t = ts.from_datetime(local_time)
 
-local_timezone = pytz.timezone('Europe/London')
-local_time = datetime.now(local_timezone)
-print(f"Local Time: {local_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        earth = eph['earth']
+        moon = eph['moon']
+        observer = earth + location
+        moon_apparent = observer.at(t).observe(moon).apparent()
+        alt, az, distance = moon_apparent.altaz()
 
-ts = load.timescale()
-t = ts.from_datetime(local_time)
+        risen = False
+        if alt.degrees > 0:
+            risen = True
 
-earth = eph['earth']
-moon = eph['moon']
+        response = {
+            "azimuth": float(f"{az.degrees:.2f}"),
+            "elevation": float(f"{alt.degrees:.2f}"),
+            "risen": risen,
+            "distance": float(f"{distance.km:.2f}")
+        }
 
-observer = earth + location
-moon_apparent = observer.at(t).observe(moon).apparent()
+        return jsonify(response), 200
 
-alt, az, distance = moon_apparent.altaz()
+    except TypeError:
+        return jsonify({"error": "Missing header parameters."}), 400
+    except ValueError:
+        return jsonify({"error": "Invalid parameter type."}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-print(f"Azimuth: {az.degrees:.2f} degrees")
-print(f"Elevation: {alt.degrees:.2f} degrees")
-
-if alt.degrees > 0:
-    print("Moon is risen")
-else:
-    print("Moon is not risen")
+if __name__ == '__main__':
+    app.run(debug=True)
