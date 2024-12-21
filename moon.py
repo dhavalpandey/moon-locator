@@ -3,12 +3,13 @@ from skyfield.api import Topos, load
 from datetime import datetime
 import zoneinfo
 import pytz
+from flask_cors import CORS 
 
 all_times = zoneinfo.available_timezones()
 
 app = Flask(__name__)
 eph = load('de421.bsp')  
-
+CORS(app)
 @app.route('/get-moon-location', methods=['POST'])
 def get_moon_location():
     try:

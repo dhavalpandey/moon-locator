@@ -25,5 +25,6 @@ function getFormattedLocalTime() {
   return `${YYYY}-${MM}-${DD} ${hh}:${mm}:${ss}.${ms}${microseconds}${sign}${offsetHours}:${offsetMinutes}`;
 }
 
-const localTime = getFormattedLocalTime();
-console.log(localTime);
+function getTime() {
+  return getFormattedLocalTime();
+}
