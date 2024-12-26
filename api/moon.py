@@ -15,7 +15,7 @@ def get_moon_location():
     try:
         latitude = float(request.headers.get('latitude'))
         longitude = float(request.headers.get('longitude')) 
-        elevation = float(request.headers.get('elevation'))  
+        elevation = float(50)
         dt_str = str(request.headers.get('time'))
         local_time = datetime.fromisoformat(dt_str)
 

@@ -1,0 +1,100 @@
+body,
+html {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #000;
+  color: #fff;
+  font-family: Arial, sans-serif;
+}
+.compass-container {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  margin-bottom: 20px;
+}
+canvas {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.1s ease-out;
+}
+#info {
+  font-size: 1.2em;
+  text-align: center;
+  margin-bottom: 10px;
+}
+#message {
+  font-size: 1.2em;
+  margin-bottom: 10px;
+}
+#permission-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #1e90ff;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  transition: background-color 0.3s ease;
+  margin-top: 20px;
+  z-index: 10;
+}
+#permission-button:hover {
+  background-color: #63b3ed;
+}
+.compass-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+.my-point,
+.target-point {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+}
+.my-point {
+  background-color: red;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.3s ease, top 0.1s ease, left 0.1s ease;
+}
+.target-point {
+  background-color: lime;
+  transform: translate(-50%, -50%);
+}
+/* Direction Labels */
+.direction-label {
+  position: absolute;
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+}
+.north {
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.east {
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+}
+.south {
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.west {
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+}
