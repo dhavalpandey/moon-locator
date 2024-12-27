@@ -8,7 +8,7 @@ const compassCircle = document.querySelector(".compass-circle");
 const myPoint = document.querySelector(".my-point");
 const targetPoint = document.querySelector(".target-point");
 
-const tolerance = 5; // Degrees tolerance for alignment
+const tolerance = 5;
 
 let azimuthAligned = false;
 
@@ -16,16 +16,15 @@ const isIOS =
   navigator.userAgent.match(/(iPod|iPhone|iPad)/) &&
   navigator.userAgent.match(/AppleWebKit/);
 
-// Calculate Position Based on Azimuth and Elevation
 function calculatePosition(azimuth, elevation) {
-  const radius = 150; // Radius of the compass circle (half of 300px)
-  const elevationFactor = Math.min(elevation / 90, 1); // Normalize elevation (0 to 1)
-  const distance = radius * (0.3 + 0.7 * elevationFactor); // Adjust multiplier as needed
+  const radius = 150;
+  const elevationFactor = Math.min(elevation / 90, 1);
+  const distance = radius * (0.3 + 0.7 * elevationFactor);
 
-  const radians = (azimuth - 90) * (Math.PI / 180); // Adjust so 0° is north
+  const radians = (azimuth - 90) * (Math.PI / 180);
 
-  const x = 50 + ((distance * Math.cos(radians)) / radius) * 50; // Percentage
-  const y = 50 + ((distance * Math.sin(radians)) / radius) * 50; // Percentage
+  const x = 50 + ((distance * Math.cos(radians)) / radius) * 50;
+  const y = 50 + ((distance * Math.sin(radians)) / radius) * 50;
 
   return { x, y };
 }
@@ -70,14 +69,16 @@ function requestGeolocationPermission() {
         requestMoonLocation(latitude, longitude, dt_str)
           .then((moonData) => {
             if (moonData) {
-              let { azimuth, elevation, distance, risen } = moonData;
+              let { azimuth, elevation, distance, risen, next_rise, next_set } =
+                moonData;
               azimuth = parseInt(azimuth);
               elevation = parseInt(elevation);
 
               if (risen) {
                 plotTarget(azimuth, elevation);
+                console.log(genRelativeTimeStr(next_set));
               } else {
-                alert(`The moon has not risen yet. It is ${distance} km away.`);
+                alert(genRelativeTimeStr(next_rise));
               }
             }
           })
